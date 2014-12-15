@@ -196,15 +196,10 @@ public class NlpApi {
 	 * @param text the string to be classified
 	 * @return
 	 */
-	public Map<String, Double> probabilityDist(String text) throws IOException {
+	public Map<String, Double> categoryProbability(String text) throws IOException {
 
 		Map<String, Double> probDist = new HashMap<String, Double>();
-		DoccatModel model = modelFactory.getModel("en-doccat.train", DoccatModel.class);
-		if(model == null) {
-			model = NlpTrainingApi.trainDocumentCategorizer("nlptraining/en-doccat.train");
-			modelFactory.addModel("en-doccat.train", model);
-		}
-		DocumentCategorizerME documentCategorizer = new DocumentCategorizerME(model);
+		DocumentCategorizerME documentCategorizer = getDocumentCategorizer();
 		double[] categorize = documentCategorizer.categorize(text);
 
 		for (int i = 0; i < documentCategorizer.getNumberOfCategories(); i++) {
@@ -214,6 +209,23 @@ public class NlpApi {
 		return probDist;
 	}
 
+	public String categoryBest(String text) throws IOException {
+
+		DocumentCategorizerME documentCategorizer = getDocumentCategorizer();
+		double[] categorize = documentCategorizer.categorize(text);
+		return documentCategorizer.getBestCategory(categorize);
+	}
+
+	private DocumentCategorizerME getDocumentCategorizer() throws IOException {
+
+		DoccatModel model = modelFactory.getModel("en-doccat.train", DoccatModel.class);
+		if(model == null) {
+			model = NlpTrainingApi.trainDocumentCategorizer("nlptraining/en-doccat.train");
+			modelFactory.addModel("en-doccat.train", model);
+		}
+		return new DocumentCategorizerME(model);
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		NlpApi api = new NlpApi();
@@ -221,6 +233,7 @@ public class NlpApi {
 		System.out.println(api.parse(text));
 		String[] sentence = new String[] { "Mike", "Smith", "is", "a", "good", "person" };
 		System.out.println(api.findName(sentence));
-		System.out.println(api.probabilityDist("Where are you now ?"));
+		System.out.println(api.categoryProbability("Where are you now ?"));
+		System.out.println(api.categoryBest("Where are you now ?"));
 	}
 }

@@ -128,8 +128,7 @@ public class NlpTrainingApi {
             POSTaggerFactory factory = null;
 
             if(tagDictionaryFile != null) {
-                FileInputStream fis = new FileInputStream(tagDictionaryFile);
-                POSDictionary tagDictionary = POSDictionary.create(fis);
+                POSDictionary tagDictionary = loadDictionary(tagDictionaryFile);;
                 factory = new POSTaggerFactory(null, tagDictionary);
             }
             else {
