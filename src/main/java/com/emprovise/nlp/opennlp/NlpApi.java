@@ -5,9 +5,10 @@ import com.emprovise.nlp.opennlp.model.Sentence;
 import com.emprovise.nlp.opennlp.parsers.NlpParser;
 import com.emprovise.nlp.util.NetUtil;
 import opennlp.tools.chunker.ChunkerME;
-import opennlp.tools.chunker.ChunkerModel;
 import opennlp.tools.cmdline.PerformanceMonitor;
 import opennlp.tools.cmdline.parser.ParserTool;
+import opennlp.tools.doccat.DoccatModel;
+import opennlp.tools.doccat.DocumentCategorizerME;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.parser.Parse;
@@ -32,7 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NlpApi {
 
@@ -117,6 +120,18 @@ public class NlpApi {
 		return nameSpans;
 	}
 
+	public String[] getPOSTags(String text) throws IOException {
+
+		String[] words = tokenize(text);
+		return getPOSTags(words);
+	}
+
+	public String[] getPOSTags(String[] words) throws IOException {
+
+		POSTaggerME tagger = new POSTaggerME(modelFactory.getPOSMaxentModel());
+		return tagger.tag(words);
+	}
+
 	public POSSample POSTag(String text) throws IOException {
 
 		POSModel model = modelFactory.getPOSMaxentModel();
@@ -144,18 +159,24 @@ public class NlpApi {
 		return sample;
 	}
 
-	public String[] chunk(String text) throws IOException {
-
+	public Span[] chunkAsSpans(String text) throws IOException {
 		POSSample sample = POSTag(text);
-		String whitespaceTokenizerLine[] = sample.getSentence();
-		String tags[] = sample.getTags();
+		return chunkAsSpans(sample.getSentence(), sample.getTags());
+	}
 
-		// chunker
-		ChunkerModel cModel = modelFactory.getChunkerModel();
-		ChunkerME chunkerME = new ChunkerME(cModel);
-		String result[] = chunkerME.chunk(whitespaceTokenizerLine, tags);
-		Span[] span = chunkerME.chunkAsSpans(whitespaceTokenizerLine, tags);
-		return result;
+	public Span[] chunkAsSpans(String words[], String[] tags) {
+		ChunkerME chunkerME = new ChunkerME(modelFactory.getChunkerModel());
+		return chunkerME.chunkAsSpans(words, tags);
+	}
+
+	public String[] chunk(String text) throws IOException {
+		POSSample sample = POSTag(text);
+		return chunk(sample.getSentence(), sample.getTags());
+	}
+
+	public String[] chunk(String words[], String[] tags) {
+		ChunkerME chunkerME = new ChunkerME(modelFactory.getChunkerModel());
+		return chunkerME.chunk(words, tags);
 	}
 
 	public Sentence parseSentence(String input) {
@@ -168,6 +189,31 @@ public class NlpApi {
 		return nlpParser.parseText(input);
 	}
 
+	/**
+	 * Classifies text via a maxent model. Try to keep chunks of text small, or
+	 * typically there will be all low scores with little difference.
+	 *
+	 * @param text the string to be classified
+	 * @return
+	 */
+	public Map<String, Double> probabilityDist(String text) throws IOException {
+
+		Map<String, Double> probDist = new HashMap<String, Double>();
+		DoccatModel model = modelFactory.getModel("en-doccat.train", DoccatModel.class);
+		if(model == null) {
+			model = NlpTrainingApi.trainDocumentCategorizer("nlptraining/en-doccat.train");
+			modelFactory.addModel("en-doccat.train", model);
+		}
+		DocumentCategorizerME documentCategorizer = new DocumentCategorizerME(model);
+		double[] categorize = documentCategorizer.categorize(text);
+
+		for (int i = 0; i < documentCategorizer.getNumberOfCategories(); i++) {
+			String category = documentCategorizer.getCategory(i);
+			probDist.put(category, categorize[documentCategorizer.getIndex(category)]);
+		}
+		return probDist;
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		NlpApi api = new NlpApi();
@@ -175,5 +221,6 @@ public class NlpApi {
 		System.out.println(api.parse(text));
 		String[] sentence = new String[] { "Mike", "Smith", "is", "a", "good", "person" };
 		System.out.println(api.findName(sentence));
+		System.out.println(api.probabilityDist("Where are you now ?"));
 	}
 }

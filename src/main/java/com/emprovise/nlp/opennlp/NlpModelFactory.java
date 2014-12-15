@@ -31,7 +31,7 @@ public class NlpModelFactory {
 
     private static Logger log = LoggerFactory.getLogger(NlpApi.class);
 
-    private Map<NlpBinary, BaseModel> modelMap = new HashMap<NlpBinary, BaseModel>();
+    private Map<String, BaseModel> modelMap = new HashMap<String, BaseModel>();
 
     private Map<NlpBinary, File> opennlpMap = new HashMap<NlpBinary, File>();
 
@@ -77,12 +77,12 @@ public class NlpModelFactory {
 
     public BaseModel getModel(NlpBinary nlpBinary) {
         try {
-            if (modelMap.containsKey(nlpBinary)) {
-                return modelMap.get(nlpBinary);
+            if (modelMap.containsKey(nlpBinary.value())) {
+                return modelMap.get(nlpBinary.value());
             } else {
                 Method method = getClass().getMethod("get" + nlpBinary.type().getSimpleName(), File.class);
                 BaseModel model = (BaseModel) method.invoke(this, opennlpMap.get(nlpBinary));
-                modelMap.put(nlpBinary, model);
+                modelMap.put(nlpBinary.value(), model);
                 return model;
             }
         } catch (Exception ex) {
@@ -144,5 +144,17 @@ public class NlpModelFactory {
 
     public ChunkerModel getChunkerModel() {
         return (ChunkerModel) getModel(EN_CHUNKER);
+    }
+
+    public void addModel(String modelName, BaseModel model) {
+        if(NlpBinary.containsValue(modelName)) {
+            throw new IllegalArgumentException("Invalid value for model name.");
+        }
+
+        modelMap.put(modelName, model);
+    }
+
+    public <T> T getModel(String modelName, Class T) {
+        return (T) modelMap.get(modelName);
     }
 }

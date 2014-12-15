@@ -49,5 +49,16 @@ public enum NlpBinary {
         return OPENNLP_BASE_URI + name;
     }
 
+    public static boolean containsValue(String string) {
+
+        for (NlpBinary binary : NlpBinary.values()) {
+            if (binary.value().equals(string)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static final String OPENNLP_BASE_URI = "http://opennlp.sourceforge.net/models-1.5/";
 }
