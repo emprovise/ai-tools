@@ -8,7 +8,9 @@ import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.cmdline.PerformanceMonitor;
 import opennlp.tools.cmdline.parser.ParserTool;
 import opennlp.tools.doccat.DoccatModel;
+import opennlp.tools.doccat.DocumentCategorizerEvaluator;
 import opennlp.tools.doccat.DocumentCategorizerME;
+import opennlp.tools.doccat.DocumentSample;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.parser.Parse;
@@ -216,6 +218,15 @@ public class NlpApi {
 		return documentCategorizer.getBestCategory(categorize);
 	}
 
+	public double categoryAccuracy(String category, String text) throws IOException {
+
+		DocumentCategorizerME documentCategorizer = getDocumentCategorizer();
+		DocumentCategorizerEvaluator evaluator = new DocumentCategorizerEvaluator(documentCategorizer);
+		DocumentSample sample = new DocumentSample(category, text);
+		evaluator.evaluteSample(sample);
+		return evaluator.getAccuracy();
+	}
+
 	private DocumentCategorizerME getDocumentCategorizer() throws IOException {
 
 		DoccatModel model = modelFactory.getModel("en-doccat.train", DoccatModel.class);
@@ -234,6 +245,6 @@ public class NlpApi {
 		String[] sentence = new String[] { "Mike", "Smith", "is", "a", "good", "person" };
 		System.out.println(api.findName(sentence));
 		System.out.println(api.categoryProbability("Where are you now ?"));
-		System.out.println(api.categoryBest("Where are you now ?"));
+		System.out.println(api.categoryAccuracy("task", "Where are you now ?"));
 	}
 }
