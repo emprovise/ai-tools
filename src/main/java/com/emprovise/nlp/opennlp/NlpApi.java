@@ -39,6 +39,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * <p>This class provides a common interface to the
+ * <a href="http://opennlp.sourceforge.net/">OpenNLP</a> toolkit.</p>
+ *
+ * <p>It supports the following natural language processing tools:
+ * <ul>
+ * <li>Sentence detection</li>
+ * <li>Tokenization</li>
+ * <li>Part of speech (POS) tagging</li>
+ * <li>Chunking</li>
+ * </ul>
+ * </p>
+ *
+ */
 public class NlpApi {
 
 	private static Logger log = LoggerFactory.getLogger(NlpApi.class);
